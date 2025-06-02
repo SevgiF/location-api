@@ -31,7 +31,7 @@ services:
     networks:
       - fiber-net
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_ROOT_PASSWORD" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass" ]
       interval: 10s
       timeout: 5s
       retries: 10
