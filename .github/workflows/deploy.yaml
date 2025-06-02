@@ -33,18 +33,24 @@ jobs:
 
       - name: Deploy with docker-compose (Local Runner)
         run: |
-          echo "Creating location-app folder if not exists..."
+          set -e
+          
+          echo "Preparing ~/location-app..."
           mkdir -p ~/location-app
           
           echo "Copying docker-compose.yml..."
           cp docker-compose.yml ~/location-app/
           
-          echo "Cleaning previous deploy..."
-          rm -rf ~/location-app/tmp || true
+          echo "Copying .env if exists..."
+          if [ -f .env ]; then cp .env ~/location-app/; fi
           
-          echo "Running docker-compose..."
+          echo "Switching to deploy directory..."
           cd ~/location-app
+          
+          echo "Pulling latest image..."
           docker-compose pull
+          
+          echo "Running docker-compose up..."
           docker-compose up -d
 
       # This is show how to deploy to EC2 with security group (use dev branch)
@@ -62,6 +68,7 @@ jobs:
           description: 'GitHub Action'
 
       - name: Copy docker-compose.yml to EC2
+        if: github.ref == 'refs/heads/dev' #for main branch
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SSH_HOST }}
