@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
@@ -31,34 +31,23 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/location-app:latest
 
-      - name: Copy docker-compose.yml to LOCAL
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.LOCAL_SSH_HOST }}
-          username: ${{ secrets.LOCAL_SSH_USERNAME }}
-          key: ${{ secrets.LOCAL_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "~/location-app/docker-compose.yml"
+      - name: Deploy with docker-compose (Local Runner)
+        run: |
+          echo "Creating location-app folder if not exists..."
+          mkdir -p ~/location-app
+          
+          echo "Copying docker-compose.yml..."
+          cp docker-compose.yml ~/location-app/
+          
+          echo "Cleaning previous deploy..."
+          rm -rf ~/location-app/tmp || true
+          
+          echo "Running docker-compose..."
+          cd ~/location-app
+          docker-compose pull
+          docker-compose up -d
 
-      - name: Deploy to LOCAL server with docker-compose
-        uses: easingthemes/ssh-deploy@main
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.LOCAL_SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.LOCAL_SSH_HOST }}
-          REMOTE_USER: ${{ secrets.LOCAL_SSH_USERNAME }}
-          SOURCE: |
-            docker-compose.yml
-          TARGET: "~/location-app"
-          SCRIPT_BEFORE: |
-            echo "Clean..."
-            rm -rf ~/location-app/*
-          SCRIPT_AFTER: |
-            echo "Docker Compose start..."
-            cd ~/location-app
-            docker-compose pull
-            docker-compose up -d
-
-      # This is show how to deploy to EC2 (use dev branch)
+      # This is show how to deploy to EC2 with security group (use dev branch)
       - name: Add MAIN's public IP to AWS security group
         if: github.ref == 'refs/heads/dev' #for main branch
         uses: sohelamin/aws-security-group-add-ip-action@master
@@ -72,6 +61,15 @@ jobs:
           protocol: 'tcp'
           description: 'GitHub Action'
 
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "~/location-app/docker-compose.yml"
+
       - name: Deploy to MAIN with docker-compose
         if: github.ref == 'refs/heads/dev'
         uses: easingthemes/ssh-deploy@main
@@ -79,8 +77,9 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOST }}
           REMOTE_USER: ${{ secrets.SSH_USERNAME }}
-          SOURCE: "."                           # Tüm kaynak kodu gönder
-          TARGET: "~/location-app"              # EC2 tarafındaki klasör
+          SOURCE: |
+            docker-compose.yml
+          TARGET: "~/location-app"
           SCRIPT_BEFORE: |
             echo "Cleaning previous deploy..."
             rm -rf ~/location-app/*
