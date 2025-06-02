@@ -50,9 +50,11 @@ Bu proje, GitHub Actions ile otomatik build ve deploy sürecine sahiptir. Ana ö
 •	dev branch’e yapılan push’lar ayrıca bir AWS EC2 sunucusuna deploy edilir:
 •	docker-compose.yml dosyası EC2’ye SCP ile kopyalanır
 •	Uzakta docker-compose pull && up -d komutları çalıştırılır
+<img width="1172" alt="Screenshot 2025-06-02 at 4 23 42 PM" src="https://github.com/user-attachments/assets/3e64e196-7854-408d-8fce-c17c7959d237" />
 
 
 ## Test
 
 Benchmark testi eklendi. Integration testleri de eklenebilir.
+<img width="564" alt="Screenshot 2025-06-02 at 5 18 13 PM" src="https://github.com/user-attachments/assets/486a33af-98d6-451a-a7b7-17861dcbf75b" />
 
