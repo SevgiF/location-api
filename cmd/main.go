@@ -52,7 +52,7 @@ func main() {
 
 	location.SetupLocation(admin, db)
 
-	err := app.Listen(":80")
+	err := app.Listen(":8080")
 	if err != nil {
 		panic(err)
 	}

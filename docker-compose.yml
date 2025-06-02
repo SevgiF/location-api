@@ -1,0 +1,44 @@
+
+services:
+  app:
+    build: .
+    container_name: location-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_USER: root
+      MYSQL_PASS: rootpass
+      MYSQL_ADDR: location-mysql:3306
+      MYSQL_DB: location
+    networks:
+      - fiber-net
+
+  mysql:
+    image: mysql:8
+    container_name: location-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: location
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fiber-net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql_data:
+
+networks:
+  fiber-net:
+    driver: bridge
