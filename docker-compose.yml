@@ -1,7 +1,7 @@
 
 services:
   app:
-    build: .
+    image: sevgifidan/location-app:latest
     container_name: location-app
     ports:
       - "8080:8080"
@@ -23,6 +23,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: location
+      MYSQL_USER: root
     ports:
       - "3308:3306"
     volumes:

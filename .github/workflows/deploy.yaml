@@ -1,0 +1,91 @@
+name: Build and Deploy with Docker
+
+on:
+  push:
+    branches:
+      - main #for prod
+      - dev #for development
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/location-app:latest
+
+      - name: Copy docker-compose.yml to LOCAL
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.LOCAL_SSH_HOST }}
+          username: ${{ secrets.LOCAL_SSH_USERNAME }}
+          key: ${{ secrets.LOCAL_SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "~/location-app/docker-compose.yml"
+
+      - name: Deploy to LOCAL server with docker-compose
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.LOCAL_SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.LOCAL_SSH_HOST }}
+          REMOTE_USER: ${{ secrets.LOCAL_SSH_USERNAME }}
+          SOURCE: |
+            docker-compose.yml
+          TARGET: "~/location-app"
+          SCRIPT_BEFORE: |
+            echo "Clean..."
+            rm -rf ~/location-app/*
+          SCRIPT_AFTER: |
+            echo "Docker Compose start..."
+            cd ~/location-app
+            docker-compose pull
+            docker-compose up -d
+
+      # This is show how to deploy to EC2 (use dev branch)
+      - name: Add MAIN's public IP to AWS security group
+        if: github.ref == 'refs/heads/dev' #for main branch
+        uses: sohelamin/aws-security-group-add-ip-action@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'eu-central-1'
+          aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+          port: ${{ secrets.SSH_PORT }}
+          to-port: '30'
+          protocol: 'tcp'
+          description: 'GitHub Action'
+
+      - name: Deploy to MAIN with docker-compose
+        if: github.ref == 'refs/heads/dev'
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USERNAME }}
+          SOURCE: "."                           # Tüm kaynak kodu gönder
+          TARGET: "~/location-app"              # EC2 tarafındaki klasör
+          SCRIPT_BEFORE: |
+            echo "Cleaning previous deploy..."
+            rm -rf ~/location-app/*
+          SCRIPT_AFTER: |
+            echo "Running docker-compose..."
+            cd ~/location-app
+            docker-compose pull
+            docker-compose up -d
