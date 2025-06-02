@@ -33,7 +33,7 @@ Bu proje, Golang kullanılarak geliştirilen bir konum yönetimi uygulamasıdır
 - Gönderilen konuma en yakın konumdan başlayarak rota listesi verir.
 - Rota Haversine formülüne göre hesaplanır.
 
-### 🚀 Otomatik Deploy Süreci
+## 🚀 Otomatik Deploy Süreci
 
 Bu proje, GitHub Actions ile otomatik build ve deploy sürecine sahiptir. Ana özellikler:
 
@@ -50,3 +50,9 @@ Bu proje, GitHub Actions ile otomatik build ve deploy sürecine sahiptir. Ana ö
 •	dev branch’e yapılan push’lar ayrıca bir AWS EC2 sunucusuna deploy edilir:
 •	docker-compose.yml dosyası EC2’ye SCP ile kopyalanır
 •	Uzakta docker-compose pull && up -d komutları çalıştırılır
+
+
+## Test
+
+Benchmark testi eklendi. Integration testleri de eklenebilir.
+
